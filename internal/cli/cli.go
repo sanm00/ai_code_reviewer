@@ -10,6 +10,7 @@ import (
 	"ai_code_reviewer/internal/gitutil"
 	"ai_code_reviewer/internal/openaiutil"
 
+	"github.com/charmbracelet/glamour"
 	"github.com/spf13/cobra"
 )
 
@@ -66,7 +67,19 @@ func Run() {
 				os.Exit(1)
 			}
 
-			fmt.Println(result)
+			// markdown 渲染
+			r, _ := glamour.NewTermRenderer(
+				glamour.WithAutoStyle(),
+				glamour.WithWordWrap(150),
+			)
+
+			out, err := r.Render(result)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "输出结果失败:", err)
+				os.Exit(1)
+			}
+			fmt.Print(out)
+
 		},
 	}
 
