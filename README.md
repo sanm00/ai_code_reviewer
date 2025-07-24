@@ -28,14 +28,14 @@ go mod tidy
 3. **编译可执行文件**
 
 ```bash
-go build -o ai_code_reviewer
+go build -o acr
 ```
 
 ## 配置说明
 
 ### 方式一：配置文件（推荐）
 
-在用户主目录下创建 `~/acr/.config.yaml`，内容示例：
+在用户主目录下创建 `~/.acr/config.yaml`，内容示例：
 
 ```yaml
 token: sk-xxxxxxx   # 你的 OpenAI API Token
@@ -51,29 +51,9 @@ export AI_CODE_REVIEWER_PROMPT="请帮我审查以下代码变更，指出潜在
 export AI_CODE_REVIEWER_MODEL=gpt-3.5-turbo
 ```
 
-### 方式三：命令行参数（优先级最高）
-
-- `--prompt` 自定义审查提示词
-- `--model`  指定模型（如 gpt-3.5-turbo）
-
 ## 使用示例
-
-1. **最简单用法（需先配置 token）**
-
-```bash
-./ai_code_reviewer
 ```
-
-2. **自定义 prompt**
-
-```bash
-./ai_code_reviewer --prompt "请重点关注安全问题"
-```
-
-3. **指定模型和配置文件**
-
-```bash
-./ai_code_reviewer --model gpt-4 --config /path/to/your_config.yaml
+acr -h
 ```
 
 ## 常见问题
