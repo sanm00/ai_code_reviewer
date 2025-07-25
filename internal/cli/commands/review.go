@@ -21,9 +21,11 @@ func CreateReviewCommand() *cobra.Command {
 	opts := &ReviewOptions{}
 
 	cmd := &cobra.Command{
-		Use:   "review",
-		Short: "发送diff给AI审查",
-		Run:   runReview(opts),
+		Use:     "review [args] |",
+		Short:   "发送diff给AI审查",
+		Args:    cobra.MaximumNArgs(2), // 允许 0-2 个位置参数
+		Example: "  # 标志参数用法\n  review --source master --target dev\n\n  # 位置参数用法\n  review master dev\n\n  # 混合用法\n  review master --target dev",
+		Run:     runReview(opts),
 	}
 
 	cmd.Flags().StringVarP(&opts.SourceRef, "source", "s", "", "源分支")
@@ -34,6 +36,13 @@ func CreateReviewCommand() *cobra.Command {
 
 func runReview(opts *ReviewOptions) func(*cobra.Command, []string) {
 	return func(cmd *cobra.Command, args []string) {
+		if len(args) > 0 {
+			opts.SourceRef = args[0]
+		}
+		if len(args) > 1 {
+			opts.TargetRef = args[1]
+		}
+
 		cfg, err := config.LoadConfig(config.DefaultConfigFile)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "获取配置失败：%v\n", err)

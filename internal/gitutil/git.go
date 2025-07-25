@@ -11,10 +11,10 @@ import (
 // sourceRef、targetRef 均可为空
 
 func GetGitDiff(sourceRef, targetRef string) (string, error) {
-	if sourceRef == "" {
+	if isEmptyRef(sourceRef) {
 		sourceRef = "--"
 	}
-	if targetRef == "" {
+	if isEmptyRef(targetRef) {
 		targetRef = "HEAD"
 	}
 
@@ -98,4 +98,8 @@ func runGitCommand(args ...string) (string, error) {
 			strings.Join(args, " "), err, string(output))
 	}
 	return string(output), nil
+}
+
+func isEmptyRef(ref string) bool {
+	return ref == "" || ref == "."
 }
