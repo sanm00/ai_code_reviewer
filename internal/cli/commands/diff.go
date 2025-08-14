@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"ai_code_reviewer/internal/cli/progress"
+	"ai_code_reviewer/internal/cli/renderer"
 	"ai_code_reviewer/internal/gitutil"
 
 	"github.com/spf13/cobra"
@@ -40,15 +42,28 @@ func runDiff(opts *DiffOptions) func(*cobra.Command, []string) {
 			opts.TargetRef = args[1]
 		}
 
-		diff, err := gitutil.GetGitDiff(opts.SourceRef, opts.TargetRef)
+		// 初始化进度显示和渲染器
+		progressTracker := progress.NewSimpleProgress("Git差异")
+		renderer, err := renderer.NewRenderer()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "获取 git diff 失败:", err)
+			fmt.Fprintf(os.Stderr, "初始化渲染器失败：%v\n", err)
 			os.Exit(1)
 		}
+
+		// 获取Git diff
+		progressTracker.Show("获取Git差异...")
+		diff, err := gitutil.GetGitDiff(opts.SourceRef, opts.TargetRef)
+		if err != nil {
+			progressTracker.Error(fmt.Sprintf("获取 git diff 失败: %v", err))
+			os.Exit(1)
+		}
+
 		if diff == "" {
-			fmt.Println("无 diff 变更。")
+			progressTracker.Info("无 diff 变更")
 			return
 		}
-		fmt.Println(diff)
+
+		progressTracker.Success("Git差异获取完成")
+		renderer.RenderDiff(diff)
 	}
 }

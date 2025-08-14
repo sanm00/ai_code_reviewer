@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 
+	"ai_code_reviewer/internal/cli/progress"
+	"ai_code_reviewer/internal/cli/renderer"
 	"ai_code_reviewer/internal/config"
 
 	"github.com/spf13/cobra"
@@ -53,18 +55,33 @@ func CreateConfigCommand() *cobra.Command {
 }
 
 func handleConfigInit() error {
+	progressTracker := progress.NewSimpleProgress("配置初始化")
+	progressTracker.Show("初始化配置文件...")
+
 	if err := config.InitConfigFile(config.DefaultConfigFile); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		progressTracker.Error(fmt.Sprintf("初始化失败: %v", err))
 		return err
 	}
-	fmt.Println("已初始化配置文件：", config.DefaultConfigFile)
+
+	progressTracker.Success(fmt.Sprintf("已初始化配置文件：%s", config.DefaultConfigFile))
 	return nil
 }
 
 func handleConfigPrint() error {
+	progressTracker := progress.NewSimpleProgress("配置查看")
+	progressTracker.Show("加载配置文件...")
+
 	cfg, err := config.LoadConfig(config.DefaultConfigFile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "获取配置失败：%v\n", err)
+		progressTracker.Error(fmt.Sprintf("获取配置失败：%v", err))
+		return err
+	}
+
+	progressTracker.Success("配置加载完成")
+
+	renderer, err := renderer.NewRenderer()
+	if err != nil {
+		progressTracker.Error(fmt.Sprintf("初始化渲染器失败：%v", err))
 		return err
 	}
 
@@ -74,18 +91,21 @@ func handleConfigPrint() error {
 	for i := 0; i < val.NumField(); i++ {
 		field := typ.Field(i)
 		value := val.Field(i)
-		fmt.Printf("%s: %v\n", field.Name, value.Interface())
+		renderer.RenderConfig(field.Name, fmt.Sprintf("%v", value.Interface()))
 	}
 	return nil
 }
 
 func handleConfigSet(kvPairs []string) error {
+	progressTracker := progress.NewSimpleProgress("配置设置")
+	progressTracker.Show("解析配置参数...")
+
 	var updates config.Config
 
 	for _, kv := range kvPairs {
 		key, val, err := parseConfigKeyValue(kv)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			progressTracker.Error(fmt.Sprintf("参数解析失败: %v", err))
 			return err
 		}
 
@@ -99,16 +119,18 @@ func handleConfigSet(kvPairs []string) error {
 		case "url":
 			updates.Url = val
 		default:
-			fmt.Fprintf(os.Stderr, "不支持的配置项: %s\n", key)
+			progressTracker.Error(fmt.Sprintf("不支持的配置项: %s", key))
 			return fmt.Errorf("invalid config key")
 		}
 	}
 
+	progressTracker.Show("更新配置文件...")
 	if err := config.UpdateConfigFile(config.DefaultConfigFile, updates); err != nil {
-		fmt.Fprintf(os.Stderr, "写入配置失败: %v\n", err)
+		progressTracker.Error(fmt.Sprintf("写入配置失败: %v", err))
 		return err
 	}
-	fmt.Println("配置已更新。")
+
+	progressTracker.Success("配置已更新")
 	return nil
 }
 

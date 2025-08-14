@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"os"
 
+	"ai_code_reviewer/internal/cli/progress"
+	"ai_code_reviewer/internal/cli/renderer"
 	"ai_code_reviewer/internal/config"
 	"ai_code_reviewer/internal/gitutil"
 	"ai_code_reviewer/internal/openaiutil"
 
-	"github.com/charmbracelet/glamour"
 	"github.com/spf13/cobra"
 )
 
@@ -43,49 +44,56 @@ func runReview(opts *ReviewOptions) func(*cobra.Command, []string) {
 			opts.TargetRef = args[1]
 		}
 
-		cfg, err := config.LoadConfig(config.DefaultConfigFile)
+		// 初始化进度显示和渲染器
+		progressTracker := progress.NewSimpleProgress("代码审查")
+		renderer, err := renderer.NewRenderer()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "获取配置失败：%v\n", err)
+			fmt.Fprintf(os.Stderr, "初始化渲染器失败：%v\n", err)
 			os.Exit(1)
 		}
 
+		// 加载配置
+		progressTracker.Show("加载配置...")
+		cfg, err := config.LoadConfig(config.DefaultConfigFile)
+		if err != nil {
+			progressTracker.Error(fmt.Sprintf("获取配置失败：%v", err))
+			os.Exit(1)
+		}
+		progressTracker.Success("配置加载完成")
+
+		// 获取Git diff
+		progressTracker.Show("获取Git差异...")
 		diff, err := gitutil.GetGitDiff(opts.SourceRef, opts.TargetRef)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "获取 git diff 失败:", err)
+			progressTracker.Error(fmt.Sprintf("获取 git diff 失败: %v", err))
 			os.Exit(1)
 		}
 		if diff == "" {
-			fmt.Println("无 diff 变更，无需审查。")
+			progressTracker.Info("无 diff 变更，无需审查")
 			return
 		}
+		progressTracker.Success("Git差异获取完成")
+
+		// 发送给AI审查
+		progressTracker.Show("发送给AI进行代码审查...")
+		spinner := progress.NewSpinner("AI正在分析代码")
+		spinner.Start()
 
 		result, err := openaiutil.Chart(cfg.Token, cfg.Prompt, diff, cfg.Model, cfg.Url)
+		spinner.Stop()
+
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "代码审查失败:", err)
+			progressTracker.Error(fmt.Sprintf("代码审查失败: %v", err))
 			os.Exit(1)
 		}
+		progressTracker.Success("AI代码审查完成")
 
-		if err := renderMarkdown(result); err != nil {
-			fmt.Fprintln(os.Stderr, "输出结果失败:", err)
+		// 渲染结果
+		progressTracker.Show("渲染审查结果...")
+		if err := renderer.RenderMarkdown(result); err != nil {
+			progressTracker.Error(fmt.Sprintf("输出结果失败: %v", err))
 			os.Exit(1)
 		}
+		progressTracker.Success("审查结果渲染完成")
 	}
-}
-
-func renderMarkdown(content string) error {
-	r, err := glamour.NewTermRenderer(
-		glamour.WithAutoStyle(),
-		glamour.WithWordWrap(150),
-	)
-	if err != nil {
-		return err
-	}
-
-	out, err := r.Render(content)
-	if err != nil {
-		return err
-	}
-
-	fmt.Print(out)
-	return nil
 }
