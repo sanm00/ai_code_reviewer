@@ -12,7 +12,7 @@ import (
 
 func GetGitDiff(sourceRef, targetRef string) (string, error) {
 	if isEmptyRef(sourceRef) {
-		sourceRef = "--"
+		sourceRef = ""
 	}
 	if isEmptyRef(targetRef) {
 		targetRef = "HEAD"
@@ -21,7 +21,7 @@ func GetGitDiff(sourceRef, targetRef string) (string, error) {
 	var result strings.Builder
 
 	// 1. 获取常规diff
-	regularDiff, err := runGitCommand("diff", targetRef, sourceRef)
+	regularDiff, err := runGitCommand("diff", fmt.Sprintf("%s...%s", targetRef, sourceRef))
 	if err != nil {
 		return "", fmt.Errorf("获取diff失败: %w", err)
 	}
