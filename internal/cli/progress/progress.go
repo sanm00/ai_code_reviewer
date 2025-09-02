@@ -121,20 +121,36 @@ func NewSimpleProgress(message string) *SimpleProgress {
 
 // Show 显示进度消息
 func (s *SimpleProgress) Show(message string) {
-	fmt.Fprintf(os.Stderr, "%s: %s\n", s.message, message)
+	if s.message == "" {
+		fmt.Fprintf(os.Stderr, "%s\n", message)
+	} else {
+		fmt.Fprintf(os.Stderr, "%s: %s\n", s.message, message)
+	}
 }
 
 // Success 显示成功消息
 func (s *SimpleProgress) Success(message string) {
-	fmt.Fprintf(os.Stderr, "✅ %s: %s\n", s.message, message)
+	if s.message == "" {
+		fmt.Fprintf(os.Stderr, "✅ %s\n", message)
+	} else {
+		fmt.Fprintf(os.Stderr, "✅ %s: %s\n", s.message, message)
+	}
 }
 
 // Error 显示错误消息
 func (s *SimpleProgress) Error(message string) {
-	fmt.Fprintf(os.Stderr, "❌ %s: %s\n", s.message, message)
+	if s.message == "" {
+		fmt.Fprintf(os.Stderr, "❌ %s\n", message)
+	} else {
+		fmt.Fprintf(os.Stderr, "❌ %s: %s\n", s.message, message)
+	}
 }
 
 // Info 显示信息消息
 func (s *SimpleProgress) Info(message string) {
-	fmt.Fprintf(os.Stderr, "ℹ️  %s: %s\n", s.message, message)
+	if s.message == "" {
+		fmt.Fprintf(os.Stderr, "ℹ️  %s\n", message)
+	} else {
+		fmt.Fprintf(os.Stderr, "ℹ️  %s: %s\n", s.message, message)
+	}
 }

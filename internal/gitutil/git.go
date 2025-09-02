@@ -11,17 +11,23 @@ import (
 // sourceRef、targetRef 均可为空
 
 func GetGitDiff(sourceRef, targetRef string) (string, error) {
-	if isEmptyRef(sourceRef) {
-		sourceRef = ""
-	}
-	if isEmptyRef(targetRef) {
-		targetRef = "HEAD"
-	}
-
 	var result strings.Builder
+	var regularDiff string
+	var err error
+
+	if isEmptyRef(sourceRef) && isEmptyRef(targetRef) {
+		regularDiff, err = runGitCommand("diff", ".")
+	} else {
+		if isEmptyRef(sourceRef) {
+			sourceRef = ""
+		}
+		if isEmptyRef(targetRef) {
+			targetRef = "HEAD"
+		}
+		regularDiff, err = runGitCommand("diff", fmt.Sprintf("%s...%s", targetRef, sourceRef))
+	}
 
 	// 1. 获取常规diff
-	regularDiff, err := runGitCommand("diff", fmt.Sprintf("%s...%s", targetRef, sourceRef))
 	if err != nil {
 		return "", fmt.Errorf("获取diff失败: %w", err)
 	}

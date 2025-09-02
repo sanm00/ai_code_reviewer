@@ -45,7 +45,7 @@ func runReview(opts *ReviewOptions) func(*cobra.Command, []string) {
 		}
 
 		// 初始化进度显示和渲染器
-		progressTracker := progress.NewSimpleProgress("代码审查")
+		progressTracker := progress.NewSimpleProgress("")
 		renderer, err := renderer.NewRenderer()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "初始化渲染器失败：%v\n", err)
